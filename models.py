@@ -67,9 +67,10 @@ class Encoder(nn.Module):
 
         self.make_trainable(self.resnet.layer3)
         self.make_trainable(self.resnet.layer4)
+        self.make_trainable(self.resnet.avgpool)
 
         # Resize image to fixed size to allow input images of variable size
-        self.resnet.adaptive_pooling = nn.AdaptiveAvgPool2d((self.encoded_img_size,self.encoded_img_size))
+        # self.resnet.adaptive_pooling = nn.AdaptiveAvgPool2d((self.encoded_img_size,self.encoded_img_size))
 
         # def forward_imp(img):
             # with torch.no_grad():
@@ -92,7 +93,7 @@ class Encoder(nn.Module):
             out = self.resnet.layer2(out)
         out = self.resnet.layer3(out)
         out = self.resnet.layer4(out)
-        out = self.resnet.adaptive_pooling(out)
+        out = self.resnet.avgpool(out)
         return out
 
 
@@ -244,13 +245,15 @@ class RNN(nn.Module):
 
 if __name__ == "__main__":
     img = torch.randn(1,3,224,224)
-    caption = torch.randn(100,1,100)
+    caption = torch.randn(1,2048)
     print(caption.shape)
     encoder = Encoder(224)
     encoder.resnet_modifier()
-    attention = Attention(enc_hid_dim=512,dec_hid_dim=100)
-    decoder = Decoder(input_dim=1000,hidden_dim=100,num_layers=3,attention=attention)
-    archimix = ArchiMix(encoder=encoder,decoder=decoder)
-    hidden , cell = decoder.init_hidden(batch_size=1,bidirectional=2)
-    archimix(img,hidden,cell,caption)
-    print(archimix)
+    enc_out = encoder(img).squeeze(2).squeeze(2)
+    print(torch.cat((enc_out,caption)).shape)
+    # attention = Attention(enc_hid_dim=512,dec_hid_dim=100)
+    # decoder = Decoder(input_dim=1000,hidden_dim=100,num_layers=3,attention=attention)
+    # archimix = ArchiMix(encoder=encoder,decoder=decoder)
+    # hidden , cell = decoder.init_hidden(batch_size=1,bidirectional=2)
+    # archimix(img,hidden,cell,caption)
+    # print(archimix)
